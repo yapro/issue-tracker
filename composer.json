@@ -1,0 +1,38 @@
+{
+  "name": "yapro/issue-tracker",
+  "type": "library",
+  "description": "Issue tracker",
+  "keywords": ["issue", "tracker", "php"],
+  "authors": [
+    {
+      "name": "Lebedenko Nikolay",
+      "email": "totx@ya.ru",
+      "role": "Developer",
+      "homepage": "https://yapro.ru"
+    }
+  ],
+  "require": {
+    "php": ">=7.4.0",
+    "doctrine/dbal": "*",
+    "doctrine/collections": "*",
+    "symfony/serializer": "*",
+    "yapro/helpers": "dev-master"
+  },
+  "require-dev": {
+    "symfony/phpunit-bridge": "*",
+    "doctrine/annotations": "*",
+    "symfony/yaml": "*",
+    "symfony/framework-bundle": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "YaPro\\IssueTracker\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "YaPro\\IssueTracker\\Tests\\": "tests/"
+    }
+  },
+  "minimum-stability": "dev"
+}
