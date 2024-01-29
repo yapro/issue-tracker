@@ -1,0 +1,22 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    YaPro\IssueTracker\:
+        resource: '../../{Service}'
+
+    YaPro\IssueTracker\DataProvider\JiraDataProvider:
+        arguments:
+            $client: "@jira.http_client"
+            $token: '%env(JIRA_TOKEN)%'
+
+    YaPro\Helper\Validation\ScalarValidator: ~
+    YaPro\Helper\JsonHelper: ~
+    YaPro\Helper\FileHelper: ~
+
+#    Optionally:
+#    YaPro\ApiRationBundle\Cors\CorsResolver:
+#        tags:
+#            - { name: kernel.event_subscriber }
