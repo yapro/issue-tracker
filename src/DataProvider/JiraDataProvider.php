@@ -70,7 +70,7 @@ class JiraDataProvider implements DataProviderInterface
                 "self": "https://jira.yapro.ru/rest/api/2/user?username=lebedenko",
                 "name": "lebedenko",
                 "key": "lebedenko",
-                "emailAddress": "lebedenko@banki.ru",
+                "emailAddress": "lebedenko@site.ru",
                 "avatarUrls": {
                     "48x48": "https://jira.yapro.ru/secure/useravatar?ownerId=lebedenko&avatarId=22376",
                     "24x24": "https://jira.yapro.ru/secure/useravatar?size=small&ownerId=lebedenko&avatarId=22376",
@@ -85,7 +85,7 @@ class JiraDataProvider implements DataProviderInterface
                 "self": "https://jira.yapro.ru/rest/api/2/user?username=lebedenko",
                 "name": "lebedenko",
                 "key": "lebedenko",
-                "emailAddress": "lebedenko@banki.ru",
+                "emailAddress": "lebedenko@site.ru",
                 "avatarUrls": {
                     "48x48": "https://jira.yapro.ru/secure/useravatar?ownerId=lebedenko&avatarId=22376",
                     "24x24": "https://jira.yapro.ru/secure/useravatar?size=small&ownerId=lebedenko&avatarId=22376",
