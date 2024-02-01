@@ -16,60 +16,56 @@ composer require yapro/apiration-bundle dev-master
 Add the next tables with data:
 ```sql
 CREATE TABLE it_issue (
-    id INT PRIMARY KEY NOT NULL,
-    developer_id INT NOT NULL,
-    tester_id INT NOT NULL,
-    key_id VARCHAR(255) NOT NULL,
+    id VARCHAR(255) PRIMARY KEY NOT NULL,
+    epic_id VARCHAR(255),
     created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
     updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
+    is_current_sprint BOOLEAN DEFAULT false NOT NULL,
+    status_name VARCHAR(255) NOT NULL,
+    status_updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
     summary VARCHAR(255) NOT NULL,
+    developer_id VARCHAR(255) NOT NULL,
     developer_estimated INT NOT NULL,
     developer_remaining INT NOT NULL,
     developer_logged INT NOT NULL,
-    developer_logged_from_history INT NOT NULL, -- todo проверить и удалить
+    tester_id VARCHAR(255) NOT NULL,
     tester_estimated INT NOT NULL,
     tester_remaining INT NOT NULL,
     tester_logged INT NOT NULL,
-    tester_logged_from_history INT NOT NULL, -- todo проверить и удалить
-    component_name VARCHAR(255) NOT NULL,
-    repository_name VARCHAR(255) NOT NULL,
-    status_name VARCHAR(255) NOT NULL,
-    status_updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
-    is_open_sprint_issue BOOLEAN DEFAULT false NOT NULL,
-    epic_key_id VARCHAR(255) NOT NULL
+    component_name VARCHAR(255),
+    repository_name VARCHAR(255)
 );
 CREATE INDEX in_it_issue$developer_id ON it_issue (developer_id);
 CREATE INDEX in_it_issue$tester_id ON it_issue (tester_id);
-CREATE UNIQUE INDEX iu_it_issue$key_id ON it_issue (key_id);
+-- CREATE UNIQUE INDEX iu_it_issue$id ON it_issue (id);
 
-CREATE TABLE it_issue_history (
-    id INT PRIMARY KEY NOT NULL,
-    it_user_id INT NOT NULL,
-    it_issue_id INT NOT NULL,
+CREATE TABLE it_history (
+    id VARCHAR(255) PRIMARY KEY NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    issue_id VARCHAR(255) NOT NULL,
     created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
     field_name VARCHAR(255) NOT NULL,
     field_value VARCHAR(255) NOT NULL
 );
-CREATE INDEX in_it_issue_history$it_user_id ON it_issue_history (it_user_id);
-CREATE INDEX in_it_issue_history$it_issue_id ON it_issue_history (it_issue_id);
+CREATE INDEX in_it_history$user_id ON it_history (user_id);
+CREATE INDEX in_it_history$issue_id ON it_history (issue_id);
 
 CREATE TABLE it_user (
-    id INT PRIMARY KEY NOT NULL,
-    key_id VARCHAR(255) NOT NULL,
-    display_name VARCHAR(255) NOT NULL,
+    id VARCHAR(255) PRIMARY KEY NOT NULL,
+    name VARCHAR(255) NOT NULL,
     is_enabled BOOLEAN NOT NULL,
     role_id SMALLINT NOT NULL
 );
-CREATE UNIQUE INDEX iu_it_user$key_id ON it_user (key_id);
+-- CREATE UNIQUE INDEX iu_it_user$key_id ON it_user (key_id);
 
 -- CONSTRAINTS:
 ALTER TABLE it_issue ADD CONSTRAINT fk_it_issue$developer_id__it_user$id FOREIGN KEY (developer_id) REFERENCES it_user (id) NOT DEFERRABLE INITIALLY IMMEDIATE;
 ALTER TABLE it_issue ADD CONSTRAINT fk_it_issue$tester_id__it_user$id FOREIGN KEY (tester_id) REFERENCES it_user (id) NOT DEFERRABLE INITIALLY IMMEDIATE;
-ALTER TABLE it_issue_history ADD CONSTRAINT fk_it_issue_history$it_user_id__it_user$id FOREIGN KEY (it_user_id) REFERENCES it_user (id) ON DELETE CASCADE NOT DEFERRABLE INITIALLY IMMEDIATE;
-ALTER TABLE it_issue_history ADD CONSTRAINT fk_it_issue_history$it_user_id__it_issue$id FOREIGN KEY (it_issue_id) REFERENCES it_issue (id) ON DELETE CASCADE NOT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE it_history ADD CONSTRAINT fk_it_history$user_id__it_user$id FOREIGN KEY (user_id) REFERENCES it_user (id) ON DELETE CASCADE NOT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE it_history ADD CONSTRAINT fk_it_history$issue_id__it_issue$id FOREIGN KEY (issue_id) REFERENCES it_issue (id) ON DELETE CASCADE NOT DEFERRABLE INITIALLY IMMEDIATE;
 
 -- DATA:
-INSERT INTO it_user (id, key_id, display_name, is_enabled, role_id) VALUES (0, 'DEFAULT_USER', 'DEFAULT_USER', true, 0);
+INSERT INTO it_user (id, name, is_enabled, role_id) VALUES ('DEFAULT_USER', 'DEFAULT_USER', true, 0);
 ```
 
 ## Configuration - step 2 - symfony
@@ -99,7 +95,7 @@ JIRA_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --- задачи и последняя дата списания времени:
 WITH issues_last_timespent_at AS (
     SELECT it_issue_id, MAX(created_at) AS last_timespent_at
-    FROM it_issue_history
+    FROM it_history
     WHERE field_name = 'timespent'
     GROUP BY it_issue_id
 --- задачи по которым завершены работы в указанный промежуток времени:
@@ -165,7 +161,7 @@ p.s. немного изменив данный запрос, можно соз�
 -- находим задачи, у которых было изменение статуса за указанный диапазон времени (например за сутки)
 WITH statuses_yesterday AS (
     SELECT it_issue_id
-    FROM it_issue_history
+    FROM it_history
     WHERE field_name = 'status' AND created_at BETWEEN '2023-12-17T10:00:00.242Z' AND '2023-12-18T10:00:00.242Z'
     GROUP BY it_issue_id
 )
@@ -187,8 +183,8 @@ WHERE ti.status_name NOT IN ('Ready for Development', 'Закрыто') AND ti.i
 SELECT
     tu.display_name user_name,
     sum(tih.field_value::NUMERIC/60/60) sum_hours
-FROM it_issue_history tih
-JOIN it_user tu ON tu.id = tih.it_user_id
+FROM it_history tih
+JOIN it_user tu ON tu.id = tih.user_id
 WHERE
   tih.created_at BETWEEN '2023-12-18T00:00:00Z' AND '2023-12-31T23:59:59Z'
   AND tih.field_name = 'timespent'
@@ -206,9 +202,9 @@ p.s. к сожалению, сделать такой отчет по текущ
 SELECT
     tu.display_name user_name,
     sum(tih.field_value::NUMERIC/60/60) sum_hours
-FROM it_issue_history tih
-JOIN it_user tu ON tu.id = tih.it_user_id
-JOIN it_issue ti ON ti.id = tih.it_issue_id AND ti.epic_key_id='SS-1783'
+FROM it_history tih
+JOIN it_user tu ON tu.id = tih.user_id
+JOIN it_issue ti ON ti.id = tih.it_issue_id AND ti.epic_id='SS-1783'
 WHERE
     tih.created_at BETWEEN '2023-12-18T00:00:00Z' AND '2023-12-31T23:59:59Z'
   AND tih.field_name = 'timespent'
@@ -227,9 +223,9 @@ WITH user_activity_seconds AS (
     SELECT
         tu.display_name user_name,
         sum(tih.field_value::NUMERIC) all_seconds,
-        sum(CASE WHEN ti.epic_key_id='SS-1783' THEN tih.field_value::NUMERIC ELSE 0 END) AS activity_seconds
-    FROM it_issue_history tih
-    JOIN it_user tu ON tu.id = tih.it_user_id
+        sum(CASE WHEN ti.epic_id='SS-1783' THEN tih.field_value::NUMERIC ELSE 0 END) AS activity_seconds
+    FROM it_history tih
+    JOIN it_user tu ON tu.id = tih.user_id
     JOIN it_issue ti ON ti.id = tih.it_issue_id
     WHERE
         tih.created_at BETWEEN '2023-12-18T00:00:00Z' AND '2023-12-31T23:59:59Z'
@@ -262,9 +258,9 @@ p.s. к сожалению, сделать такой отчет по текущ
 SELECT
   floor(extract(epoch from tih.created_at)/86400)*86400 AS "time", -- $__timeGroupAlias(tih.created_at, $__interval, previous),
   tu.display_name AS "metric",
-  sum(tih.field_value::NUMERIC/60/60) OVER (Partition by tih.it_user_id ORDER BY tih.created_at) AS "value"
-FROM it_issue_history tih
-JOIN it_user tu ON tu.id = tih.it_user_id
+  sum(tih.field_value::NUMERIC/60/60) OVER (Partition by tih.user_id ORDER BY tih.created_at) AS "value"
+FROM it_history tih
+JOIN it_user tu ON tu.id = tih.user_id
 WHERE
   tih.field_name = 'timespent' AND 
   tih.created_at BETWEEN '2023-12-18T00:00:00' AND '2023-12-31T23:59:59' -- BETWEEN '${__from:date:YYYY-MM-DD}T00:00:00' AND '${__to:date:YYYY-MM-DD}T23:59:59'
@@ -279,7 +275,7 @@ WITH issues_next_sprint AS (
     SELECT *
     FROM it_issue
     WHERE id IN (SELECT DISTINCT it_issue_id
-                 FROM it_issue_history
+                 FROM it_history
                  WHERE field_name = 'sprint' AND field_value = 'SEO_8')
       AND status_name != 'Closed'
     ORDER BY key_id -- status_name
