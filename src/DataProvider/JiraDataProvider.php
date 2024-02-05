@@ -178,7 +178,7 @@ class JiraDataProvider implements DataProviderInterface
             // 'jql' => 'project = SS AND sprint = "SEO_" AND issue not in ('.$wrongIssues. ') OR issue in childIssuesOf("' . self::TEAM_ACTIVITY_EPIC_ID . '")',
             'jql' => 'project = SS AND ( sprint = "SEO_" OR issue in childIssuesOf("' . self::TEAM_ACTIVITY_EPIC_ID . '") )',
             //'jql' => 'issue = SS-1788', // одна из активностей в команде
-            //'jql' => 'issue = SS-1999',
+            //'jql' => 'issue = SS-2094',
             'fields' => implode(',', [
                 'summary',
                 'status',
